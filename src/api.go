@@ -19,7 +19,7 @@ func SendOpenAIRequest(body OpenAIAPIRequest, apiKey string) (GPTResponse, error
 		return gptResponse, err
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*60)
 
 	defer cancel()
 

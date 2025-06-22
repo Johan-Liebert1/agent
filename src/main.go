@@ -21,6 +21,8 @@ const (
 	XClipCmdClipboardPrimary
 )
 
+var APIKey string
+
 func XClipCmdFromArg() XClipCmd {
 	if len(os.Args) < 2 {
 		return XClipCmdClipboardPrimary
@@ -119,11 +121,6 @@ func main() {
 		log.Fatal().Err(err).Msg("Failed to read from stdout buffer")
 	}
 
-	apiKey, ok := os.LookupEnv("API_KEY")
-	if !ok {
-		log.Fatal().Msg("EnvVar API_KEY not found")
-	}
-
 	log.Debug().Msgf("Output: %s", string(data))
 
 	userPrompt := UserPrompt{}
@@ -148,7 +145,7 @@ func main() {
 
 	log.Info().Interface("message", openAiApiReq.Messages).Msg("Prompt")
 
-	resp, err := SendOpenAIRequest(openAiApiReq, apiKey)
+	resp, err := SendOpenAIRequest(openAiApiReq, APIKey)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "OpenAPI req failed: %+v", err)
 		os.Exit(1)

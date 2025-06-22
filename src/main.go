@@ -30,8 +30,6 @@ func XClipCmdFromArg() XClipCmd {
 
 	arg := os.Args[1]
 
-	os.Args = os.Args[1:]
-
 	if arg == "s" {
 		return XClipCmdSelection
 	}
@@ -164,37 +162,44 @@ func main() {
 		log.Fatal().Err(err).Msg("xclip not found. Please install 'xclip'")
 	}
 
-	clipOrSelection := XClipCmdFromArg()
-
-	selection, err := xclipCmd(clipOrSelection)
-	if err != nil {
-		log.Fatal().Err(err).Msg("Err while executing xclip")
-	}
-
-	data, err := io.ReadAll(selection)
-	if err != nil {
-		log.Fatal().Err(err).Msg("Failed to read from stdout buffer")
-	}
-
-	log.Debug().Msgf("Output: %s", string(data))
-
 	userPrompt := UserPrompt{}
 
-	if len(os.Args) > 0 && os.Args[0] == "floating" {
+	clipOrSelection := XClipCmdClipboardPrimary
+
+	fmt.Println(os.Args)
+
+	if len(os.Args) > 0 && os.Args[1] == "floating" {
 		userPrompt = CreateWindow()
 		userPrompt.Prompt += "\n"
+		clipOrSelection = userPrompt.XClipCmd
 
 		if userPrompt.Cancel {
 			return
 		}
+	} else {
+		clipOrSelection = XClipCmdFromArg()
 	}
+
+	xClipOutput, err := xclipCmd(clipOrSelection)
+	if err != nil {
+		log.Fatal().Err(err).Msg("Err while executing xclip")
+	}
+
+	data, err := io.ReadAll(xClipOutput)
+	if err != nil {
+		log.Fatal().Err(err).Msg("Failed to read from stdout buffer")
+	}
+
+	context := string(data)
+
+	log.Debug().Msgf("Output: %s", context)
 
 	openAiApiReq := OpenAIAPIRequest{
 		Model: "chatgpt-4o-latest",
 		Store: true,
 		Messages: GetConverstaionMessages(RequestMessage{
 			Role:    "user",
-			Content: userPrompt.Prompt + string(data),
+			Content: userPrompt.Prompt + context,
 		}),
 	}
 

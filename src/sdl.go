@@ -17,10 +17,11 @@ var Commands = []string{
 }
 
 type UserPrompt struct {
-	Cancel           bool
-	Prompt           string
-	CopyToClipboard  bool
-	GetFromSelection bool
+	Cancel          bool
+	Prompt          string
+	CopyToClipboard bool
+	// Where to get context from, selection or clipboard. Default clipboard
+	XClipCmd XClipCmd
 }
 
 func parseCommands(currentString string, userPrompt *UserPrompt) {
@@ -33,6 +34,9 @@ func parseCommands(currentString string, userPrompt *UserPrompt) {
 			switch currentString[i+1] {
 			case 'c':
 				userPrompt.CopyToClipboard = true
+
+			case 's':
+				userPrompt.XClipCmd = XClipCmdSelection
 			}
 
 			i += 2
@@ -116,8 +120,10 @@ func CreateWindow() UserPrompt {
 
 	userPrompt := UserPrompt{
 		// cancel by defeault
-		Cancel: true,
-		Prompt: "",
+		Cancel:          true,
+		Prompt:          "",
+		CopyToClipboard: false,
+		XClipCmd:        XClipCmdClipboardPrimary,
 	}
 
 	for !quit {

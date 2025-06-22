@@ -3,17 +3,46 @@ package main
 import (
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/rs/zerolog/log"
 	"github.com/veandco/go-sdl2/sdl"
 	"github.com/veandco/go-sdl2/ttf"
 )
 
-const WINDOW_SCALE_FACTOR = 30
+const WindowScaleFactor = 30
+
+var Commands = []string{
+	"c",
+}
 
 type UserPrompt struct {
-	Cancel bool
-	Prompt string
+	Cancel           bool
+	Prompt           string
+	CopyToClipboard  bool
+	GetFromSelection bool
+}
+
+func parseCommands(currentString string, userPrompt *UserPrompt) {
+	i := 0
+
+	currentString = strings.TrimSpace(currentString)
+
+	for i < len(currentString) {
+		if currentString[i] == '/' && i < len(currentString)-1 {
+			switch currentString[i+1] {
+			case 'c':
+				userPrompt.CopyToClipboard = true
+			}
+
+			i += 2
+			continue
+		}
+
+		break
+	}
+
+	userPrompt.Prompt = currentString[i:]
 }
 
 func renderText(text string, renderer *sdl.Renderer, font *ttf.Font) error {
@@ -53,8 +82,8 @@ func CreateWindow() UserPrompt {
 		"",
 		sdl.WINDOWPOS_UNDEFINED,
 		sdl.WINDOWPOS_UNDEFINED,
-		16*WINDOW_SCALE_FACTOR,
-		9*WINDOW_SCALE_FACTOR,
+		16*WindowScaleFactor,
+		9*WindowScaleFactor,
 		sdl.WINDOW_SHOWN|sdl.WINDOW_ALLOW_HIGHDPI|sdl.WINDOW_BORDERLESS,
 	)
 	if err != nil {
@@ -117,7 +146,7 @@ func CreateWindow() UserPrompt {
 					case "Return":
 						{
 							userPrompt.Cancel = false
-							userPrompt.Prompt = currentString
+							parseCommands(currentString, &userPrompt)
 
 							quit = true
 						}

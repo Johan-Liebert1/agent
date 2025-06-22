@@ -75,6 +75,61 @@ func xclipCmd(cmd XClipCmd) (*bytes.Buffer, error) {
 	return stdout, nil
 }
 
+func openConvo(content string) {
+	fileName := "/tmp/thingy.md"
+
+	file, err := os.OpenFile(fileName, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0o666)
+	if err != nil {
+		log.Fatal().Err(err).Msgf("Failed to open file: '%s'", fileName)
+	}
+	log.Info().Msgf("Opened file '%s' for writing", fileName)
+
+	n, err := file.WriteString(content)
+	if err != nil {
+		log.Fatal().Err(err).Msg("Failed to write to file")
+	}
+	log.Info().Msgf("Wrote %d bytes to file %s", n, fileName)
+
+	nvim, err := exec.LookPath("nvim")
+
+	cmd := exec.Command("gnome-terminal", "--window", "--maximize", "--", nvim, fileName)
+	cmd.Env = os.Environ()
+	cmd.Stdin = os.Stdin
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+
+	log.Info().Str("cmd", cmd.String()).Msg("Running command")
+	err = cmd.Run()
+
+	if err != nil {
+		log.Fatal().Err(err).Msg("Failed to launch nvim")
+	}
+}
+
+func copyOutputToClipboard(content string) {
+	log.Info().Str("output", content).Msg("Copying to clipboard")
+
+	cmd := exec.Command("xclip", "-selection", "clipboard")
+	stdin, err := cmd.StdinPipe()
+	if err != nil {
+		log.Fatal().Err(err).Msg("Failed to get stdin pipe")
+	}
+
+	if err := cmd.Start(); err != nil {
+		log.Fatal().Err(err).Msg("Failed to run command")
+	}
+
+	_, err = stdin.Write([]byte(content))
+	if err != nil {
+		log.Fatal().Err(err).Msg("Failed to write to cmd stdin")
+	}
+	stdin.Close()
+
+	if err := cmd.Wait(); err != nil {
+		log.Fatal().Err(err).Msg("Command failed")
+	}
+}
+
 func setupLogger() {
 	home, ok := os.LookupEnv("HOME")
 	if !ok {
@@ -153,32 +208,9 @@ func main() {
 
 	content := resp.Choices[0].Message.Content
 
-	fileName := "/tmp/thingy.md"
-
-	file, err := os.OpenFile(fileName, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0o666)
-	if err != nil {
-		log.Fatal().Err(err).Msgf("Failed to open file: '%s'", fileName)
-	}
-	log.Info().Msgf("Opened file '%s' for writing", fileName)
-
-	n, err := file.WriteString(content)
-	if err != nil {
-		log.Fatal().Err(err).Msg("Failed to write to file")
-	}
-	log.Info().Msgf("Wrote %d bytes to file %s", n, fileName)
-
-	nvim, err := exec.LookPath("nvim")
-
-	cmd := exec.Command("gnome-terminal", "--window", "--maximize", "--", nvim, fileName)
-	cmd.Env = os.Environ()
-	cmd.Stdin = os.Stdin
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-
-	log.Info().Str("cmd", cmd.String()).Msg("Running command")
-	err = cmd.Run()
-
-	if err != nil {
-		log.Fatal().Err(err).Msg("Failed to launch nvim")
+	if userPrompt.CopyToClipboard {
+		copyOutputToClipboard(content)
+	} else {
+		openConvo(content)
 	}
 }

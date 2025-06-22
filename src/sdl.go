@@ -2,9 +2,9 @@ package main
 
 import (
 	"fmt"
-	"log"
 	"os"
 
+	"github.com/rs/zerolog/log"
 	"github.com/veandco/go-sdl2/sdl"
 	"github.com/veandco/go-sdl2/ttf"
 )
@@ -58,35 +58,34 @@ func CreateWindow() UserPrompt {
 		sdl.WINDOW_SHOWN|sdl.WINDOW_ALLOW_HIGHDPI|sdl.WINDOW_BORDERLESS,
 	)
 	if err != nil {
-		log.Fatal("Failed to create window")
+		log.Fatal().Msg("Failed to create window")
 	}
 
 	renderer, err := sdl.CreateRenderer(window, 0, sdl.RENDERER_ACCELERATED)
 	if err != nil {
 		sdl.Quit()
-		log.Fatal("Failed to create renderer")
+		log.Fatal().Msg("Failed to create renderer")
 	}
 
 	if renderer.SetDrawBlendMode(sdl.BLENDMODE_BLEND) != nil {
-		log.Fatal("Failed to set blend mode")
+		log.Fatal().Msg("Failed to set blend mode")
 	}
 
 	if ttf.Init() != nil {
-		log.Fatal("Failed to init TTF\n")
+		log.Fatal().Msg("Failed to init TTF\n")
 	}
 
 	font, err := ttf.OpenFont("/usr/share/fonts/TTF/DejaVuSans.ttf", 14)
 	if err != nil {
-		log.Fatalf("Failed to load font. Err: +%v\n", err)
+		log.Fatal().Msgf("Failed to load font. Err: +%v\n", err)
 	}
 
 	prompt := []byte{}
-
 	currentString := string(prompt)
 
 	quit := false
 
-	userPrompt := UserPrompt {
+	userPrompt := UserPrompt{
 		// cancel by defeault
 		Cancel: true,
 		Prompt: "",
@@ -98,9 +97,7 @@ func CreateWindow() UserPrompt {
 		if event != nil {
 			switch e := event.(type) {
 			case *sdl.QuitEvent:
-				{
-					quit = true
-				}
+				quit = true
 
 			case *sdl.KeyboardEvent:
 				{
@@ -108,16 +105,22 @@ func CreateWindow() UserPrompt {
 						break
 					}
 
+					// Only handle ASCII
+					if e.Keysym.Sym > 127 {
+						break
+					}
+
 					switch sdl.GetKeyName(e.Keysym.Sym) {
 					case "Escape":
 						quit = true
 
-					case "Return": {
-						userPrompt.Cancel = false
-						userPrompt.Prompt = currentString
+					case "Return":
+						{
+							userPrompt.Cancel = false
+							userPrompt.Prompt = currentString
 
-						quit = true
-					}
+							quit = true
+						}
 
 					case "Backspace":
 						{

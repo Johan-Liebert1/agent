@@ -12,10 +12,6 @@ import (
 
 const WindowScaleFactor = 30
 
-var Commands = []string{
-	"c",
-}
-
 type UserPrompt struct {
 	Cancel          bool
 	Prompt          string
@@ -105,10 +101,15 @@ func CreateWindow() UserPrompt {
 	}
 
 	if ttf.Init() != nil {
-		log.Fatal().Msg("Failed to init TTF\n")
+		log.Fatal().Msg("Failed to init TTF")
 	}
 
-	font, err := ttf.OpenFont("/usr/share/fonts/TTF/DejaVuSans.ttf", 14)
+	rwops, err := sdl.RWFromMem(fontData)
+	if err != nil {
+		log.Fatal().Msg("Failed to init font")
+	}
+
+	font, err := ttf.OpenFontRW(rwops, 1, 14)
 	if err != nil {
 		log.Fatal().Msgf("Failed to load font. Err: +%v\n", err)
 	}
@@ -142,6 +143,10 @@ func CreateWindow() UserPrompt {
 
 					// Only handle ASCII
 					if e.Keysym.Sym > 127 {
+						break
+					}
+
+					if e.Repeat != 0 {
 						break
 					}
 
